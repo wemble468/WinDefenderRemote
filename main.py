@@ -13,12 +13,10 @@ from datetime import datetime
 import tkinter as tk
 from tkinter import messagebox
 
-# Подавляем предупреждения
 warnings.filterwarnings("ignore")
 
-
 # ============================================
-# АВТОМАТИЧЕСКОЕ ОПРЕДЕЛЕНИЕ ПАРАМЕТРОВ
+# АВТООПРЕДЕЛЕНИЕ
 # ============================================
 
 def get_pc_name():
@@ -27,17 +25,15 @@ def get_pc_name():
     except:
         return "Unknown"
 
-
 def get_mac_address():
     try:
         mac = uuid.getnode()
         if mac != 0xFFFFFFFFFFFF:
-            mac_str = ':'.join(['{:02x}'.format((mac >> elements) & 0xff) for elements in range(0, 2 * 6, 2)][::-1])
+            mac_str = ':'.join(['{:02x}'.format((mac >> elements) & 0xff) for elements in range(0, 2*6, 2)][::-1])
             if mac_str != "00:00:00:00:00:00":
                 return mac_str
         try:
-            result = subprocess.run(["ipconfig", "/all"], capture_output=True, text=True, encoding='cp866',
-                                    errors='ignore')
+            result = subprocess.run(["ipconfig", "/all"], capture_output=True, text=True, encoding='cp866', errors='ignore')
             for line in result.stdout.splitlines():
                 if "Physical Address" in line or "Физический адрес" in line:
                     mac = re.search(r'([0-9A-Fa-f]{2}[:-]){5}([0-9A-Fa-f]{2})', line)
@@ -49,7 +45,6 @@ def get_mac_address():
     except:
         return "Не определен"
 
-
 def get_ip_address():
     try:
         s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
@@ -60,13 +55,11 @@ def get_ip_address():
     except:
         return "Не определен"
 
-
 # ============================================
-# ЗАГРУЗКА КОНФИГА
+# КОНФИГ
 # ============================================
 
 CONFIG_FILE = "config.json"
-
 
 def load_config():
     default_config = {
@@ -89,12 +82,7 @@ def load_config():
     except:
         return default_config
 
-
 CONFIG = load_config()
-
-# ============================================
-# ПАРАМЕТРЫ
-# ============================================
 
 PC_NAME = get_pc_name()
 PC_MAC = get_mac_address()
@@ -105,19 +93,12 @@ WOL_BROADCAST = "255.255.255.255"
 TRAY_TOOLTIP = "WinDefenderRemote"
 LOCAL_DATA_FILE = "local_data.json"
 
-# ============================================
-# ИМПОРТ PYWIN32 ДЛЯ ТРЕЯ
-# ============================================
-
 try:
     import pystray
     from PIL import Image, ImageDraw
-
     PYSTRAY_AVAILABLE = True
 except:
     PYSTRAY_AVAILABLE = False
-    print("⚠️ Установите pystray: pip install pystray pillow")
-
 
 # ============================================
 # КЛАССЫ
@@ -138,7 +119,7 @@ class WakeOnLan:
                 return sent == len(magic_packet), "OK"
         except:
             return False, "Ошибка"
-
+    
     @staticmethod
     def test_wol():
         try:
@@ -167,7 +148,7 @@ class DefenderManager:
             return result.stdout, result.stderr, result.returncode
         except:
             return "", "", 1
-
+    
     @staticmethod
     def get_status():
         cmd = """
@@ -198,25 +179,25 @@ class DefenderManager:
             except:
                 return {"enabled": False, "updated": "Unknown"}
         return {"enabled": False, "updated": "Unknown"}
-
+    
     @staticmethod
     def enable():
         cmd = "Set-MpPreference -DisableRealtimeMonitoring $false"
         _, _, code = DefenderManager.run_powershell(cmd)
         return code == 0
-
+    
     @staticmethod
     def disable():
         cmd = "Set-MpPreference -DisableRealtimeMonitoring $true"
         _, _, code = DefenderManager.run_powershell(cmd)
         return code == 0
-
+    
     @staticmethod
     def start_quick_scan():
         cmd = "Start-MpScan -ScanType QuickScan"
         _, _, code = DefenderManager.run_powershell(cmd)
         return code == 0
-
+    
     @staticmethod
     def start_full_scan():
         cmd = "Start-MpScan -ScanType FullScan"
@@ -228,7 +209,7 @@ class LocalStorage:
     def __init__(self):
         self.data = {"computers": {}, "commands": [], "stats": []}
         self.load()
-
+    
     def load(self):
         try:
             if os.path.exists(LOCAL_DATA_FILE):
@@ -253,17 +234,17 @@ class LocalStorage:
                 self.save()
         except:
             pass
-
+    
     def save(self):
         try:
             with open(LOCAL_DATA_FILE, 'w', encoding='utf-8') as f:
                 json.dump(self.data, f, indent=2, ensure_ascii=False)
         except:
             pass
-
+    
     def get_computers(self):
         return self.data.get("computers", {})
-
+    
     def register_pc(self, pc_name, mac, ip=""):
         computers = self.get_computers()
         if pc_name not in computers:
@@ -284,14 +265,14 @@ class LocalStorage:
         self.data["computers"] = computers
         self.save()
         return True
-
+    
     def update_computers(self, computers):
         self.data["computers"] = computers
         self.save()
-
+    
     def get_commands(self):
         return self.data.get("commands", [])
-
+    
     def add_command(self, command_type):
         commands = self.get_commands()
         new_command = {
@@ -305,7 +286,7 @@ class LocalStorage:
         self.data["commands"] = commands
         self.save()
         return True
-
+    
     def mark_command_done(self, command_id):
         commands = self.get_commands()
         for cmd in commands:
@@ -316,12 +297,12 @@ class LocalStorage:
         self.data["commands"] = commands
         self.save()
         return True
-
+    
     def clear_commands(self):
         self.data["commands"] = []
         self.save()
         return True
-
+    
     def add_stat(self, stat_data):
         stats = self.data.get("stats", [])
         stats.append(stat_data)
@@ -329,62 +310,38 @@ class LocalStorage:
             stats = stats[-50:]
         self.data["stats"] = stats
         self.save()
-
+    
     def get_stats(self):
         return self.data.get("stats", [])
 
 
 class SystemTrayApp:
-    """Приложение с системным треем на pystray"""
-
     def __init__(self):
         self.local = None
         self.github = None
         self.running = True
-
         self.defender = DefenderManager()
         self.init_storage()
         self.init_github()
-
-        # Создаем иконку
         self.icon = self.create_icon()
-
-        # Создаем меню для трея
-        self.menu = self.create_menu()
-        self.icon.menu = self.menu
-
-        # Запускаем фоновый поток
+        self.icon.menu = self.create_menu()
         self.start_worker()
-
-        # Вывод информации в консоль
-        self.print_info()
-
-        # Запускаем иконку
         self.icon.run()
-
+    
     def create_icon(self):
-        """Создает иконку для трея"""
-        # Создаем изображение 64x64
         size = 64
         image = Image.new('RGB', (size, size), '#4a2b8a')
         draw = ImageDraw.Draw(image)
-
-        # Круг
-        draw.ellipse((4, 4, size - 4, size - 4), fill='#4a2b8a', outline='#6b3fa0', width=2)
-
-        # Текст "WD"
-        from PIL import ImageFont
+        draw.ellipse((4, 4, size-4, size-4), fill='#4a2b8a', outline='#6b3fa0', width=2)
         try:
+            from PIL import ImageFont
             font = ImageFont.truetype("arial.ttf", 28)
         except:
             font = ImageFont.load_default()
-
-        draw.text((size // 2 - 18, size // 2 - 14), "WD", fill='white', font=font)
-
+        draw.text((size//2-18, size//2-14), "WD", fill='white', font=font)
         return pystray.Icon("WinDefenderRemote", image, TRAY_TOOLTIP)
-
+    
     def create_menu(self):
-        """Создает меню для трея"""
         return pystray.Menu(
             pystray.MenuItem(f"🛡️ {TRAY_TOOLTIP}", lambda: None, enabled=False),
             pystray.Menu.SEPARATOR,
@@ -403,9 +360,8 @@ class SystemTrayApp:
             pystray.Menu.SEPARATOR,
             pystray.MenuItem("❌ Выход", self.exit_app)
         )
-
+    
     def create_wol_submenu(self):
-        """Создает подменю для WoL"""
         computers = self.local.get_computers()
         if computers:
             items = []
@@ -415,122 +371,78 @@ class SystemTrayApp:
             return pystray.Menu(*items)
         else:
             return pystray.Menu(pystray.MenuItem("Нет компьютеров", lambda: None, enabled=False))
-
+    
     def send_command(self, cmd):
-        """Отправляет команду"""
         if not self.local:
             return
-
         storage = self.local
         github = self.github
-
+        
         if cmd == "check_status":
             status = self.defender.get_status()
-            msg = (
-                f"📊 СТАТУС DEFENDER\n\n"
-                f"✅ Включен: {'ДА' if status.get('enabled') else 'НЕТ'}\n"
-                f"🛡️ Реальное время: {'ВКЛ' if status.get('realtime') else 'ВЫКЛ'}\n"
-                f"🦠 Угроз: {status.get('threat_count', 0)}"
-            )
-            self.show_message("📊 Статус Defender", msg)
+            msg = (f"📊 СТАТУС DEFENDER\n\n"
+                   f"✅ Включен: {'ДА' if status.get('enabled') else 'НЕТ'}\n"
+                   f"🛡️ Реальное время: {'ВКЛ' if status.get('realtime') else 'ВЫКЛ'}\n"
+                   f"🦠 Угроз: {status.get('threat_count', 0)}")
+            self.icon.notify(msg, "📊 Статус Defender")
             return
-
+        
         if cmd == "stats":
             stats = storage.get_stats()
             if not stats:
-                self.show_message("📊 Статистика", "Нет записей")
+                self.icon.notify("Нет записей", "📊 Статистика")
                 return
             msg = "📊 ИСТОРИЯ\n\n"
             for stat in stats[-10:]:
                 msg += f"🕐 {stat.get('time', '')[:16]}\n"
                 msg += f"   📌 {stat.get('type', '')}\n"
                 msg += f"   {'✅' if stat.get('success') else '❌'}\n"
-                msg += "-" * 25 + "\n"
-            self.show_message("📊 Статистика", msg)
+                msg += "-"*25 + "\n"
+            self.icon.notify(msg, "📊 Статистика")
             return
-
-        if cmd == "disable":
-            # Здесь должен быть диалог подтверждения, но pystray его не поддерживает
-            # Просто отключаем без подтверждения
-            pass
-
+        
         storage.add_command(cmd)
-
         if github and hasattr(github, 'is_connected') and github.is_connected:
             github.add_command(cmd)
-            self.show_message("✅ Команда отправлена", f"Команда: {cmd}\n\nСинхронизирована с GitHub")
+            self.icon.notify(f"Команда: {cmd}\nСинхронизирована с GitHub", "✅ Команда отправлена")
         else:
-            self.show_message("✅ Команда отправлена", f"Команда: {cmd}\n\nТолько локально")
-
+            self.icon.notify(f"Команда: {cmd}\nТолько локально", "✅ Команда отправлена")
+    
     def send_wol(self, pc_name):
-        """Отправляет WoL"""
         if not self.local:
             return
-
         computers = self.local.get_computers()
         mac = computers.get(pc_name, {}).get("mac")
-
         if mac:
             network_info = WakeOnLan.test_wol()
             success, _ = WakeOnLan.send(mac, network_info.get('broadcast', WOL_BROADCAST))
             if success:
-                self.show_message("💤 WoL отправлен", f"Пакет отправлен на {pc_name}\nMAC: {mac}")
+                self.icon.notify(f"Пакет отправлен на {pc_name}\nMAC: {mac}", "💤 WoL отправлен")
             else:
-                self.show_message("❌ Ошибка WoL", f"Не удалось отправить на {pc_name}")
+                self.icon.notify(f"Не удалось отправить на {pc_name}", "❌ Ошибка WoL")
         else:
-            self.show_message("❌ Ошибка", f"MAC не найден для {pc_name}")
-
-    def show_message(self, title, text):
-        """Показывает уведомление через pystray"""
-        self.icon.notify(text, title)
-
-    def print_info(self):
-        """Выводит информацию в консоль"""
-        print("=" * 60)
-        print("  🛡️ WinDefenderRemote")
-        print("  Удаленное управление Windows Defender")
-        print("=" * 60)
-        print(f"  📡 Имя ПК: {PC_NAME}")
-        print(f"  📡 IP-адрес: {PC_IP}")
-        print(f"  📡 MAC-адрес: {PC_MAC}")
-        if self.github and hasattr(self.github, 'is_connected') and self.github.is_connected:
-            print(f"  🌐 GitHub: ✅ Подключен")
-        else:
-            print(f"  🌐 GitHub: ❌ Не подключен")
-        print("  🔍 Нажмите на иконку WD в трее")
-        print("=" * 60)
-
+            self.icon.notify(f"MAC не найден для {pc_name}", "❌ Ошибка")
+    
     def init_github(self):
-        """Инициализация GitHub"""
         try:
             token = CONFIG.get("GITHUB_TOKEN", "").strip()
             owner = CONFIG.get("GITHUB_OWNER", "").strip()
             repo = CONFIG.get("GITHUB_REPO", "").strip()
-
             if token and owner and repo:
                 from github_manager import GitHubManager
                 self.github = GitHubManager(token, owner, repo)
                 if hasattr(self.github, 'is_connected') and self.github.is_connected:
                     self.sync_computers()
-                    print("✅ GitHub: Подключен успешно")
-                else:
-                    print(f"⚠️ GitHub: {getattr(self.github, 'last_error', 'Ошибка')}")
-            else:
-                print("⚠️ GitHub: Не настроен (заполните config.json)")
-        except Exception as e:
-            print(f"⚠️ GitHub: Ошибка инициализации - {e}")
-
+        except:
+            pass
+    
     def sync_computers(self):
-        """Синхронизирует список компьютеров с GitHub"""
         try:
             if not self.github or not hasattr(self.github, 'is_connected') or not self.github.is_connected:
                 return
-
             github_computers = self.github.get_computers()
             local_computers = self.local.get_computers()
-
             merged = {**local_computers, **github_computers}
-
             merged[PC_NAME] = {
                 "name": PC_NAME,
                 "mac": PC_MAC,
@@ -538,37 +450,31 @@ class SystemTrayApp:
                 "last_seen": datetime.now().isoformat(),
                 "status": "online"
             }
-
             self.local.update_computers(merged)
             self.github.update_computers(merged)
-
-            print(f"✅ GitHub: Синхронизировано {len(merged)} компьютеров")
-        except Exception as e:
-            print(f"⚠️ GitHub: Ошибка синхронизации - {e}")
-
+        except:
+            pass
+    
     def init_storage(self):
         self.local = LocalStorage()
         self.local.register_pc(PC_NAME, PC_MAC, PC_IP)
-
+    
     def start_worker(self):
         self.worker_thread = threading.Thread(target=self.worker_loop, daemon=True)
         self.worker_thread.start()
-
+    
     def worker_loop(self):
         defender = DefenderManager()
         sync_counter = 0
-
         while self.running:
             try:
                 if self.local:
                     commands = self.local.get_commands()
                     pending = [c for c in commands if c.get("status") == "pending"]
-
                     for cmd in pending:
                         cmd_type = cmd.get("type")
                         cmd_id = cmd.get("id")
                         success = False
-
                         if cmd_type == "scan_quick":
                             success = defender.start_quick_scan()
                             self.local.add_stat({
@@ -577,7 +483,6 @@ class SystemTrayApp:
                                 "success": success,
                                 "details": "Завершена" if success else "Ошибка"
                             })
-
                         elif cmd_type == "scan_full":
                             success = defender.start_full_scan()
                             self.local.add_stat({
@@ -586,7 +491,6 @@ class SystemTrayApp:
                                 "success": success,
                                 "details": "Завершена" if success else "Ошибка"
                             })
-
                         elif cmd_type == "check_status":
                             status = defender.get_status()
                             self.local.add_stat({
@@ -595,7 +499,6 @@ class SystemTrayApp:
                                 "success": True,
                                 "details": f"Defender: {'Вкл' if status.get('enabled') else 'Выкл'}"
                             })
-
                         elif cmd_type == "disable":
                             success = defender.disable()
                             self.local.add_stat({
@@ -604,7 +507,6 @@ class SystemTrayApp:
                                 "success": success,
                                 "details": "Отключен" if success else "Ошибка"
                             })
-
                         elif cmd_type == "enable":
                             success = defender.enable()
                             self.local.add_stat({
@@ -613,33 +515,22 @@ class SystemTrayApp:
                                 "success": success,
                                 "details": "Включен" if success else "Ошибка"
                             })
-
                         elif cmd_type == "stats":
                             success = True
-
                         self.local.mark_command_done(cmd_id)
-
-                        if success and self.github and hasattr(self.github,
-                                                               'is_connected') and self.github.is_connected:
+                        if success and self.github and hasattr(self.github, 'is_connected') and self.github.is_connected:
                             self.github.mark_command_done(cmd_id)
-
-                # Синхронизация с GitHub каждые 30 секунд
                 sync_counter += 1
-                if sync_counter >= 30 and self.github and hasattr(self.github,
-                                                                  'is_connected') and self.github.is_connected:
+                if sync_counter >= 30 and self.github and hasattr(self.github, 'is_connected') and self.github.is_connected:
                     sync_counter = 0
                     self.sync_computers()
-
-                # Обновляем меню WoL
                 if hasattr(self, 'icon') and self.icon:
                     self.icon.menu = self.create_menu()
-
-            except Exception as e:
+            except:
                 pass
             time.sleep(1)
-
+    
     def exit_app(self):
-        """Выход из программы"""
         self.running = False
         if hasattr(self, 'icon'):
             self.icon.stop()
@@ -648,11 +539,7 @@ class SystemTrayApp:
 
 def main():
     if not PYSTRAY_AVAILABLE:
-        print("❌ Установите pystray: pip install pystray pillow")
-        print("И перезапустите программу")
-        input("Нажмите Enter для выхода...")
         return
-
     app = SystemTrayApp()
 
 
