@@ -1,0 +1,336 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WinDefenderRemote</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            min-height: 100vh;
+            background: radial-gradient(ellipse at bottom, #0d0d2b 0%, #0a0a1a 100%);
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            overflow: hidden;
+            position: relative;
+        }
+
+        #stars {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        .star {
+            position: absolute;
+            background: white;
+            border-radius: 50%;
+            animation: twinkle var(--duration) ease-in-out infinite alternate;
+        }
+
+        @keyframes twinkle {
+            0% { opacity: 0.2; transform: scale(0.8); }
+            100% { opacity: 1; transform: scale(1.2); }
+        }
+
+        .shooting-star {
+            position: absolute;
+            width: 3px;
+            height: 3px;
+            background: white;
+            border-radius: 50%;
+            box-shadow: 0 0 6px 2px rgba(255, 255, 255, 0.8);
+            animation: shoot linear infinite;
+        }
+
+        .shooting-star::after {
+            content: '';
+            position: absolute;
+            top: 50%;
+            right: 0;
+            width: 80px;
+            height: 1px;
+            background: linear-gradient(to left, rgba(255,255,255,0.8), transparent);
+            transform: translateY(-50%);
+        }
+
+        @keyframes shoot {
+            0% { transform: translate(0, 0) rotate(-45deg); opacity: 0; }
+            10% { opacity: 1; }
+            90% { opacity: 1; }
+            100% { transform: translate(-600px, 600px) rotate(-45deg); opacity: 0; }
+        }
+
+        .card {
+            position: relative;
+            z-index: 1;
+            background: rgba(255, 255, 255, 0.03);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 32px;
+            padding: 50px 60px 45px;
+            max-width: 520px;
+            width: 90%;
+            text-align: center;
+            box-shadow: 0 30px 80px rgba(0, 0, 0, 0.7), inset 0 1px 0 rgba(255, 255, 255, 0.05);
+            animation: float 6s ease-in-out infinite;
+        }
+
+        @keyframes float {
+            0%, 100% { transform: translateY(0px); }
+            50% { transform: translateY(-12px); }
+        }
+
+        .card .icon {
+            font-size: 56px;
+            margin-bottom: 10px;
+            display: block;
+        }
+
+        .card h1 {
+            font-size: 32px;
+            font-weight: 700;
+            color: #fff;
+            letter-spacing: 0.5px;
+            margin-bottom: 6px;
+        }
+
+        .card .subtitle {
+            font-size: 15px;
+            color: rgba(255, 255, 255, 0.4);
+            margin-bottom: 6px;
+            font-weight: 400;
+        }
+
+        .card .version {
+            font-size: 13px;
+            color: rgba(255, 255, 255, 0.2);
+            margin-bottom: 28px;
+        }
+
+        .card .divider {
+            width: 60px;
+            height: 2px;
+            background: linear-gradient(90deg, transparent, rgba(138, 125, 255, 0.5), transparent);
+            margin: 0 auto 28px;
+            border-radius: 2px;
+        }
+
+        .card .features {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            text-align: left;
+            margin-bottom: 32px;
+        }
+
+        .card .features .item {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            color: rgba(255, 255, 255, 0.6);
+            font-size: 14px;
+            padding: 8px 14px;
+            background: rgba(255, 255, 255, 0.02);
+            border-radius: 10px;
+            border: 1px solid rgba(255, 255, 255, 0.02);
+            transition: 0.3s;
+        }
+
+        .card .features .item:hover {
+            background: rgba(255, 255, 255, 0.04);
+            border-color: rgba(138, 125, 255, 0.15);
+        }
+
+        .card .features .item .emoji {
+            font-size: 18px;
+            width: 28px;
+            flex-shrink: 0;
+        }
+
+        .download-btn {
+            display: inline-block;
+            padding: 16px 48px;
+            font-size: 18px;
+            font-weight: 700;
+            color: #fff;
+            background: linear-gradient(135deg, #6b3fa0, #4a2b8a);
+            border: none;
+            border-radius: 60px;
+            cursor: pointer;
+            text-decoration: none;
+            transition: all 0.3s ease;
+            box-shadow: 0 8px 32px rgba(74, 43, 138, 0.4);
+            letter-spacing: 0.5px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .download-btn::before {
+            content: '';
+            position: absolute;
+            top: -2px;
+            left: -2px;
+            right: -2px;
+            bottom: -2px;
+            background: linear-gradient(135deg, #8a7dff, #6b3fa0, #8a7dff);
+            background-size: 300% 300%;
+            border-radius: 60px;
+            z-index: -1;
+            animation: gradientMove 4s ease-in-out infinite;
+        }
+
+        .download-btn:hover {
+            transform: translateY(-3px) scale(1.02);
+            box-shadow: 0 12px 48px rgba(74, 43, 138, 0.6);
+        }
+
+        .download-btn:active {
+            transform: scale(0.97);
+        }
+
+        @keyframes gradientMove {
+            0%, 100% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+        }
+
+        .download-btn .arrow {
+            display: inline-block;
+            margin-left: 10px;
+            transition: transform 0.3s;
+        }
+
+        .download-btn:hover .arrow {
+            transform: translateX(6px);
+        }
+
+        .footer {
+            margin-top: 28px;
+            font-size: 13px;
+            color: rgba(255, 255, 255, 0.12);
+            letter-spacing: 0.3px;
+        }
+
+        @media (max-width: 600px) {
+            .card {
+                padding: 32px 24px 30px;
+            }
+            .card h1 {
+                font-size: 26px;
+            }
+            .download-btn {
+                padding: 14px 32px;
+                font-size: 16px;
+                width: 100%;
+            }
+            .card .features .item {
+                font-size: 13px;
+                padding: 6px 12px;
+            }
+        }
+
+        @media (max-width: 400px) {
+            .card h1 {
+                font-size: 22px;
+            }
+            .card .icon {
+                font-size: 42px;
+            }
+            .download-btn {
+                font-size: 14px;
+                padding: 12px 24px;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <div id="stars"></div>
+    <div id="shooting-stars"></div>
+
+    <div class="card">
+        <span class="icon">🛡️</span>
+        <h1>WinDefenderRemote</h1>
+        <p class="subtitle">Удалённое управление Windows Defender</p>
+        <p class="version">v2.0.1 · 11.2 МБ</p>
+
+        <div class="divider"></div>
+
+        <div class="features">
+            <div class="item">
+                <span class="emoji">⚡</span>
+                Быстрая и полная проверка
+            </div>
+            <div class="item">
+                <span class="emoji">⛔</span>
+                Включение / отключение Defender
+            </div>
+            <div class="item">
+                <span class="emoji">💤</span>
+                Wake‑on‑LAN
+            </div>
+            <div class="item">
+                <span class="emoji">🌐</span>
+                Синхронизация через GitHub
+            </div>
+        </div>
+
+        <a href="https://github.com/wemble468/WinDefenderRemote/releases/latest/download/WinDefenderRemote.exe" class="download-btn">
+            ⬇️ Скачать
+            <span class="arrow">→</span>
+        </a>
+
+        <p class="footer">Windows 10/11 · Работает в системном трее</p>
+    </div>
+
+    <script>
+        (function createStars() {
+            const container = document.getElementById('stars');
+            const count = 300;
+            for (let i = 0; i < count; i++) {
+                const star = document.createElement('div');
+                star.className = 'star';
+                const size = 1 + Math.random() * 2.5;
+                star.style.cssText = `
+                    width: ${size}px;
+                    height: ${size}px;
+                    left: ${Math.random() * 100}%;
+                    top: ${Math.random() * 100}%;
+                    --duration: ${1.5 + Math.random() * 3}s;
+                    animation-delay: ${Math.random() * 3}s;
+                    opacity: ${0.3 + Math.random() * 0.7};
+                `;
+                container.appendChild(star);
+            }
+        })();
+
+        (function createShootingStars() {
+            const container = document.getElementById('shooting-stars');
+            for (let i = 0; i < 4; i++) {
+                const star = document.createElement('div');
+                star.className = 'shooting-star';
+                star.style.cssText = `
+                    top: ${5 + Math.random() * 30}%;
+                    left: ${10 + Math.random() * 80}%;
+                    animation-duration: ${4 + Math.random() * 6}s;
+                    animation-delay: ${2 + Math.random() * 15}s;
+                `;
+                container.appendChild(star);
+            }
+        })();
+    </script>
+
+</body>
+</html>
